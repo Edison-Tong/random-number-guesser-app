@@ -7,7 +7,7 @@ export default function App() {
   const [result, setResult] = useState("");
 
   const handleGuess = () => {
-    const num = Math.floor(Math.random() * 1) + 1;
+    const num = Math.floor(Math.random() * 100) + 1;
     setRandomNumber(num);
 
     if (parseInt(guess) === num) {
