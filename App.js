@@ -1,12 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Keyboard } from "react-native";
+import { db } from "./firebase"; // 👈 Make sure the path is correct
+import { doc, setDoc } from "firebase/firestore";
+
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 
 export default function App() {
+  useEffect(() => {
+    const testWrite = async () => {
+      try {
+        await setDoc(doc(db, "testCollection", "testDoc"), {
+          hello: "world",
+        });
+        console.log("✅ Firebase write successful");
+      } catch (e) {
+        console.error("❌ Firebase error:", e);
+      }
+    };
+
+    testWrite();
+  }, []);
+
   const [guess, setGuess] = useState("");
   const [randomNumber, setRandomNumber] = useState(null);
   const [result, setResult] = useState("");
 
   const handleGuess = () => {
+    // Keyboard.dismiss();
     const num = Math.floor(Math.random() * 100) + 1;
     setRandomNumber(num);
 
