@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Keyboard } from "react-native";
 import { db } from "./firebase"; // 👈 Make sure the path is correct
 import { doc, setDoc } from "firebase/firestore";
-
+import { submitGuess } from "./firebaseHelpers";
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 
 export default function App() {
@@ -25,16 +25,25 @@ export default function App() {
   const [randomNumber, setRandomNumber] = useState(null);
   const [result, setResult] = useState("");
 
-  const handleGuess = () => {
-    // Keyboard.dismiss();
-    const num = Math.floor(Math.random() * 100) + 1;
-    setRandomNumber(num);
+  // const handleGuess = () => {
+  //   // Keyboard.dismiss();
+  //   const num = Math.floor(Math.random() * 100) + 1;
+  //   setRandomNumber(num);
 
-    if (parseInt(guess) === num) {
-      setResult("🎉 You guessed it right!");
-    } else {
-      setResult(`❌ Nope! The number was ${num}`);
-    }
+  //   if (parseInt(guess) === num) {
+  //     setResult("🎉 You guessed it right!");
+  //   } else {
+  //     setResult(`❌ Nope! The number was ${num}`);
+  //   }
+  // };
+
+  const handleGuess = () => {
+    Keyboard.dismiss();
+
+    const userId = "user1"; // or 'user2' — we'll automate this later
+    const myGuess = 42; // this would come from your TextInput state
+
+    submitGuess(userId, myGuess);
   };
 
   return (
