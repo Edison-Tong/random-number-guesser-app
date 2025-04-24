@@ -1,60 +1,39 @@
 import React, { useState, useEffect } from "react";
 import { Keyboard } from "react-native";
-import { db } from "./firebase"; // 👈 Make sure the path is correct
-import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore"; // 👈 Import updateDoc
+import { db } from "./firebase";
+import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { submitGuess } from "./firebaseHelpers";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 
 export default function App() {
   const [guess, setGuess] = useState("");
   const [result, setResult] = useState("");
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState(""); // this will become the saved username
+  const [usernameInput, setUsernameInput] = useState("");
+  const [isUsernameSet, setIsUsernameSet] = useState(false);
   const [randomNumber, setRandomNumber] = useState(null);
 
+  // Load username on mount
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    const docRef = doc(db, "dailyGuesses", today);
-
-    const unsubscribe = onSnapshot(docRef, async (snapshot) => {
-      const data = snapshot.data();
-      if (!data || !userId) return;
-
-      const { guesses = {}, randomNumber } = data;
-      setResult(""); // clear old result
-
-      const myGuess = guesses[userId];
-      const otherUserId = userId === "user1" ? "user2" : "user1";
-      const otherGuess = guesses[otherUserId];
-
-      if (guesses.user1 && guesses.user2) {
-        if (!randomNumber) {
-          // Generate random number if not already set
-          const random = Math.floor(Math.random() * 2) + 1;
-          try {
-            await updateDoc(docRef, { randomNumber: random });
-            console.log("🎲 Random number generated and saved:", random);
-          } catch (e) {
-            console.log("⚠️ Random number already saved by other user");
-          }
-        } else {
-          // both guessed & number revealed
-          setRandomNumber(randomNumber); // Set the random number state
-          const message =
-            myGuess === randomNumber
-              ? `✅ You guessed it! 🎉 The number was: ${randomNumber}`
-              : `❌ Your guess was ${myGuess}. The number was: ${randomNumber}`;
-          setResult(message);
-        }
-      } else if (myGuess && !otherGuess) {
-        setResult("Waiting for the other player...");
-      } else {
-        setResult(""); // don't show anything yet
+    const loadUsername = async () => {
+      const savedUsername = await AsyncStorage.getItem("userId");
+      if (savedUsername) {
+        setUserId(savedUsername);
+        setIsUsernameSet(true);
       }
-    });
+    };
+    loadUsername();
+  }, []); // This runs once on mount
 
-    return () => unsubscribe();
-  }, [userId]); // Add userId as dependency to ensure it runs when userId changes
+  // Handle setting username
+  const handleSetUsername = async () => {
+    const trimmed = usernameInput.trim();
+    if (!trimmed) return;
+    await AsyncStorage.setItem("userId", trimmed);
+    setUserId(trimmed);
+    setIsUsernameSet(true);
+  };
 
   const handleGuess = () => {
     Keyboard.dismiss();
@@ -76,11 +55,27 @@ export default function App() {
     setGuess(""); // clear input
   };
 
-  return (
+  // Only render the username input screen if username is not set
+  const renderUsernameInput = () => (
+    <View style={styles.container}>
+      <Text style={styles.title}>Choose a username</Text>
+      <TextInput
+        style={styles.input}
+        value={usernameInput}
+        onChangeText={setUsernameInput}
+        placeholder="Enter your username"
+      />
+      <Button title="Confirm" onPress={handleSetUsername} />
+    </View>
+  );
+
+  // If username is set, continue with game logic
+  const renderGameScreen = () => (
     <View style={styles.container}>
       <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 16 }}>
-        <Button title="Play as User 1" onPress={() => setUserId("user1")} />
-        <Button title="Play as User 2" onPress={() => setUserId("user2")} />
+        <Text style={{ textAlign: "center", marginBottom: 10 }}>
+          Logged in as: <Text style={{ fontWeight: "bold" }}>{userId}</Text>
+        </Text>
       </View>
       <Text style={{ textAlign: "center", marginBottom: 10 }}>
         Playing as: <Text style={{ fontWeight: "bold" }}>{userId || "none selected"}</Text>
@@ -97,6 +92,13 @@ export default function App() {
       {result && <Text style={styles.result}>{result}</Text>}
     </View>
   );
+
+  // Render the appropriate screen based on whether the username is set
+  if (!isUsernameSet) {
+    return renderUsernameInput();
+  } else {
+    return renderGameScreen();
+  }
 }
 
 const styles = StyleSheet.create({
