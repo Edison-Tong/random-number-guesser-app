@@ -44,12 +44,17 @@ export default function App() {
 
       if (guesses[username] && guesses[otherUser]) {
         if (!randomNumber) {
-          const random = Math.floor(Math.random() * 100) + 1;
-          try {
-            await updateDoc(docRef, { randomNumber: random });
-            console.log("🎲 Random number generated and saved:", random);
-          } catch (e) {
-            console.log("⚠️ Random number already saved by other user");
+          const usernamesSorted = [username, otherUser].sort();
+          const shouldGenerate = username === usernamesSorted[1]; // only one user generates
+
+          if (shouldGenerate) {
+            const random = Math.floor(Math.random() * 100) + 1;
+            try {
+              await updateDoc(docRef, { randomNumber: random });
+              console.log("🎲 Random number generated and saved:", random);
+            } catch (e) {
+              console.log("⚠️ Random number already saved by other user");
+            }
           }
         } else {
           setRandomNumber(randomNumber);
@@ -129,13 +134,6 @@ export default function App() {
       )}
     </View>
   );
-
-  // Render the appropriate screen based on whether the username is set
-  if (!isUsernameSet) {
-    return renderUsernameInput();
-  } else {
-    return renderGameScreen();
-  }
 }
 
 const styles = StyleSheet.create({
