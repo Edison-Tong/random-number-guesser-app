@@ -29,11 +29,12 @@ export default function App() {
   useEffect(() => {
     if (!username) return;
 
-    const today = new Date().toLocaleString("en-US", { timeZone: "America/Denver" }).split(",")[0];
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
     const docRef = doc(db, "dailyGuesses", today);
 
     const unsubscribe = onSnapshot(docRef, async (snapshot) => {
       const data = snapshot.data();
+      console.log("🔥 Firestore snapshot data:", data);
       if (!data) return;
 
       const { guesses = {}, randomNumber } = data;
@@ -48,8 +49,13 @@ export default function App() {
         setHasGuessed(true); // Disable further guessing
       }
 
+      if (myGuess) {
+        setHasGuessed(true); // Disable further guessing
+      }
+
       if (guesses[username] && guesses[otherUser]) {
-        if (!randomNumber) {
+        // Generate random number only once
+        if (!data.randomNumber) {
           const usernamesSorted = [username, otherUser].sort();
           const shouldGenerate = username === usernamesSorted[1]; // only one user generates
 
@@ -62,16 +68,19 @@ export default function App() {
               console.log("⚠️ Random number already saved by other user");
             }
           }
-        } else {
-          setRandomNumber(randomNumber);
+        }
+
+        // Set result if number already exists
+        if (data.randomNumber) {
+          setRandomNumber(data.randomNumber);
           const message =
-            myGuess === randomNumber
-              ? `✅ You guessed it! 🎉 The number was: ${randomNumber}`
-              : `❌ Your guess was ${myGuess}. The number was: ${randomNumber}`;
+            myGuess === data.randomNumber
+              ? `✅ You guessed it! 🎉 The number was: ${data.randomNumber}`
+              : `❌ Your guess was ${myGuess}. The number was: ${data.randomNumber}`;
           setResult(message);
         }
       } else if (myGuess && !otherGuess) {
-        setResult(`You guessed: ${myGuess} Waiting for the other player...`);
+        setResult(`You guessed: ${myGuess}. Waiting for the other player...`);
       }
     });
 
@@ -127,9 +136,6 @@ export default function App() {
         </>
       ) : (
         <>
-          <Text style={{ textAlign: "center", marginBottom: 10 }}>
-            Playing as: <Text style={{ fontWeight: "bold" }}>{username}</Text>
-          </Text>
           <Text style={styles.title}>Guess the Number (1–100)</Text>
           <TextInput
             style={styles.input}

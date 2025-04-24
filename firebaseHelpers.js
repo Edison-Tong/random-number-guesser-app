@@ -2,7 +2,8 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
 export async function submitGuess(userId, guess) {
-  const today = new Date().toISOString().split("T")[0]; // e.g. '2025-04-17'
+  console.log("test");
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Denver" });
   const ref = doc(db, "dailyGuesses", today);
 
   try {

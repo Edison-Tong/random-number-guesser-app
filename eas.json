@@ -3,8 +3,7 @@
     "adhoc": {
       "ios": {
         "distribution": "internal"
-      },
-      "channel": "adhoc"
+      }
     }
   }
 }
