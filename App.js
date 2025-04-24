@@ -71,7 +71,7 @@ export default function App() {
           setResult(message);
         }
       } else if (myGuess && !otherGuess) {
-        setResult("Waiting for the other player...");
+        setResult(`You guessed: ${myGuess} Waiting for the other player...`);
       }
     });
 
@@ -98,7 +98,6 @@ export default function App() {
 
     submitGuess(username, myGuess);
     setHasGuessed(true); // Disable further guesses
-    setResult("Guess submitted! Waiting for the other player...");
     setGuess("");
   };
 
