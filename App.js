@@ -29,7 +29,7 @@ export default function App() {
   useEffect(() => {
     if (!username) return;
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleString("en-US", { timeZone: "America/Denver" }).split(",")[0];
     const docRef = doc(db, "dailyGuesses", today);
 
     const unsubscribe = onSnapshot(docRef, async (snapshot) => {
