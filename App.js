@@ -12,6 +12,7 @@ export default function App() {
   const [result, setResult] = useState("");
   const [randomNumber, setRandomNumber] = useState(null);
   const [nameInput, setNameInput] = useState("");
+  const [hasGuessed, setHasGuessed] = useState(false);
 
   // Load saved username on launch
   useEffect(() => {
@@ -41,6 +42,11 @@ export default function App() {
       const myGuess = guesses[username];
       const otherUser = Object.keys(guesses).find((k) => k !== username);
       const otherGuess = guesses[otherUser];
+
+      // Check if user has already made a guess for the day
+      if (myGuess) {
+        setHasGuessed(true); // Disable further guessing
+      }
 
       if (guesses[username] && guesses[otherUser]) {
         if (!randomNumber) {
@@ -73,6 +79,10 @@ export default function App() {
   }, [username]);
 
   const handleGuess = () => {
+    if (hasGuessed) {
+      return;
+    }
+
     Keyboard.dismiss();
 
     if (!username) {
@@ -87,6 +97,7 @@ export default function App() {
     }
 
     submitGuess(username, myGuess);
+    setHasGuessed(true); // Disable further guesses
     setResult("Guess submitted! Waiting for the other player...");
     setGuess("");
   };
