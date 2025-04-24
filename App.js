@@ -1,51 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { Keyboard, Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { db } from "./firebase";
-import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { Keyboard } from "react-native";
+import { db } from "./firebase"; // 👈 Make sure the path is correct
+import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore"; // 👈 Import updateDoc
 import { submitGuess } from "./firebaseHelpers";
 
 import { View, Text, TextInput, Button, StyleSheet } from "react-native";
 
 export default function App() {
-  const [username, setUsername] = useState("");
   const [guess, setGuess] = useState("");
   const [result, setResult] = useState("");
+  const [userId, setUserId] = useState("");
   const [randomNumber, setRandomNumber] = useState(null);
-  const [nameInput, setNameInput] = useState("");
 
-  // Load saved username on launch
   useEffect(() => {
-    const loadUsername = async () => {
-      const stored = await AsyncStorage.getItem("username");
-      if (stored) {
-        setUsername(stored);
-      }
-    };
-    loadUsername();
-  }, []);
-
-  // Game logic once username is set
-  useEffect(() => {
-    if (!username) return;
-
     const today = new Date().toISOString().split("T")[0];
     const docRef = doc(db, "dailyGuesses", today);
 
     const unsubscribe = onSnapshot(docRef, async (snapshot) => {
       const data = snapshot.data();
-      if (!data) return;
+      if (!data || !userId) return;
 
       const { guesses = {}, randomNumber } = data;
       setResult(""); // clear old result
 
-      const myGuess = guesses[username];
-      const otherUser = Object.keys(guesses).find((k) => k !== username);
-      const otherGuess = guesses[otherUser];
+      const myGuess = guesses[userId];
+      const otherUserId = userId === "user1" ? "user2" : "user1";
+      const otherGuess = guesses[otherUserId];
 
-      if (guesses[username] && guesses[otherUser]) {
+      if (guesses.user1 && guesses.user2) {
         if (!randomNumber) {
-          const random = Math.floor(Math.random() * 100) + 1;
+          // Generate random number if not already set
+          const random = Math.floor(Math.random() * 2) + 1;
           try {
             await updateDoc(docRef, { randomNumber: random });
             console.log("🎲 Random number generated and saved:", random);
@@ -53,7 +38,8 @@ export default function App() {
             console.log("⚠️ Random number already saved by other user");
           }
         } else {
-          setRandomNumber(randomNumber);
+          // both guessed & number revealed
+          setRandomNumber(randomNumber); // Set the random number state
           const message =
             myGuess === randomNumber
               ? `✅ You guessed it! 🎉 The number was: ${randomNumber}`
@@ -62,72 +48,53 @@ export default function App() {
         }
       } else if (myGuess && !otherGuess) {
         setResult("Waiting for the other player...");
+      } else {
+        setResult(""); // don't show anything yet
       }
     });
 
     return () => unsubscribe();
-  }, [username]);
+  }, [userId]); // Add userId as dependency to ensure it runs when userId changes
 
   const handleGuess = () => {
     Keyboard.dismiss();
 
-    if (!username) {
-      setResult("Please choose a username first.");
+    if (!userId) {
+      setResult("Please select a user first.");
       return;
     }
 
     const myGuess = parseInt(guess, 10);
+
     if (!myGuess || myGuess < 1 || myGuess > 100) {
       setResult("Please enter a number between 1 and 100.");
       return;
     }
 
-    submitGuess(username, myGuess);
+    submitGuess(userId, myGuess);
     setResult("Guess submitted! Waiting for the other player...");
-    setGuess("");
-  };
-
-  const saveUsername = async () => {
-    const name = nameInput.trim();
-    if (!name) {
-      Alert.alert("Invalid name", "Please enter a valid name.");
-      return;
-    }
-
-    await AsyncStorage.setItem("username", name);
-    setUsername(name);
+    setGuess(""); // clear input
   };
 
   return (
     <View style={styles.container}>
-      {!username ? (
-        <>
-          <Text style={styles.title}>Choose a username</Text>
-          <TextInput
-            style={styles.input}
-            value={nameInput}
-            onChangeText={setNameInput}
-            placeholder="Enter a unique name"
-          />
-          <Button title="Set Username" onPress={saveUsername} />
-        </>
-      ) : (
-        <>
-          <Text style={{ textAlign: "center", marginBottom: 10 }}>
-            Playing as: <Text style={{ fontWeight: "bold" }}>{username}</Text>
-          </Text>
-          <Text style={styles.title}>Guess the Number (1–100)</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={guess}
-            onChangeText={setGuess}
-            placeholder="Enter your guess"
-          />
-          <Button title="Submit Guess" onPress={handleGuess} />
-          {result && <Text style={styles.result}>{result}</Text>}
-        </>
-      )}
+      <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 16 }}>
+        <Button title="Play as User 1" onPress={() => setUserId("user1")} />
+        <Button title="Play as User 2" onPress={() => setUserId("user2")} />
+      </View>
+      <Text style={{ textAlign: "center", marginBottom: 10 }}>
+        Playing as: <Text style={{ fontWeight: "bold" }}>{userId || "none selected"}</Text>
+      </Text>
+      <Text style={styles.title}>Guess the Number (1-100)</Text>
+      <TextInput
+        style={styles.input}
+        keyboardType="numeric"
+        value={guess}
+        onChangeText={setGuess}
+        placeholder="Enter your guess"
+      />
+      <Button title="Submit Guess" onPress={handleGuess} />
+      {result && <Text style={styles.result}>{result}</Text>}
     </View>
   );
 }
