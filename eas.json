@@ -1,9 +1,19 @@
 {
   "build": {
-    "adhoc": {
+    "preview": {
+      "distribution": "internal",
       "ios": {
-        "distribution": "internal"
+        "buildConfiguration": "Release"
+      }
+    },
+    "production": {
+      "ios": {
+        "buildConfiguration": "Release",
+        "distribution": "store"
       }
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
